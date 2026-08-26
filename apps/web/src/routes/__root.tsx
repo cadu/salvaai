@@ -1,5 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
+import { Toaster } from "sonner";
 import { queryClient } from "@/lib/query-client";
 
 export const Route = createRootRoute({
@@ -10,6 +11,7 @@ function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
 }

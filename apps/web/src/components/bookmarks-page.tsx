@@ -3,6 +3,7 @@ import { Bookmark, LogOut, Plus, SearchX } from "lucide-react";
 import { BookmarkCard } from "@/components/bookmark-card";
 import { BookmarkFormDialog } from "@/components/bookmark-form-dialog";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -76,12 +77,13 @@ export function BookmarksPage() {
             </div>
             <span className="text-lg font-semibold">SalvaAí</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {usuario && (
               <Badge variant="outline" className="hidden sm:inline-flex">
                 {usuario.email}
               </Badge>
             )}
+            <ThemeToggle />
             <Button
               variant="ghost"
               size="sm"
