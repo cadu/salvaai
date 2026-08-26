@@ -1,16 +1,26 @@
-import { useState } from "react";
-import { AuthScreen } from "@/components/auth-screen";
+import { authClient } from "@/lib/auth-client";
 import { BookmarksPage } from "@/components/bookmarks-page";
-import type { Usuario } from "@/types";
+import { AuthScreen } from "@/components/auth-screen";
 
-function App() {
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
+export default function App() {
+  const { data: session, isPending } = authClient.useSession();
+
+  if (isPending) {
+    return (
+      <p className="min-h-svh flex items-center justify-center text-muted-foreground">
+        Carregando...
+      </p>
+    );
+  }
+
+  const usuario = session?.user ?? null;
 
   return usuario ? (
-    <BookmarksPage usuario={usuario} onSair={() => setUsuario(null)} />
+    <BookmarksPage
+      usuario={usuario}
+      onSair={() => authClient.signOut().then(() => window.location.reload())}
+    />
   ) : (
-    <AuthScreen onEntrar={setUsuario} />
+    <AuthScreen />
   );
 }
-
-export default App;
