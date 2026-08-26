@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import type { Bookmark, BookmarkInput } from "@/types";
 
@@ -20,7 +21,11 @@ export function useCreateBookmark() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(dados),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: bookmarksKey }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: bookmarksKey });
+      toast.success("Bookmark criado!");
+    },
+    onError: () => toast.error("Erro ao criar bookmark"),
   });
 }
 
@@ -33,7 +38,11 @@ export function useUpdateBookmark() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(dados),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: bookmarksKey }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: bookmarksKey });
+      toast.success("Bookmark atualizado!");
+    },
+    onError: () => toast.error("Erro ao atualizar bookmark"),
   });
 }
 
@@ -51,6 +60,7 @@ export function useDeleteBookmark() {
       if (contexto?.anterior) {
         qc.setQueryData(bookmarksKey, contexto.anterior);
       }
+      toast.error("Erro ao excluir bookmark");
     },
     onSettled: () => qc.invalidateQueries({ queryKey: bookmarksKey }),
   });
