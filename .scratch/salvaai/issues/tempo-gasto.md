@@ -7,3 +7,4 @@
 | 07 — integration layer | ~12:00 | ~12:25 | ~25min |
 | 08 — UX polish | 12:26 | 12:35 | ~9min |
 | 09 — link enrichment + search | 12:37 | 12:42 | ~5min |
+| 10 — production build & deploy | 12:54 | 12:57 | ~3min |
