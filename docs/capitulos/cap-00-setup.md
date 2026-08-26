@@ -2,6 +2,8 @@
 
 > **Objetivo:** ao fim deste capítulo, um único comando (`bun dev`) sobe a API e o frontend juntos, com TypeScript estrito, lint e formatação funcionando em todo o monorepo.
 
+![Página inicial do SalvaAí rodando em localhost:5173](./img/cap-00-web.png)
+
 ## O que vai funcionar
 
 - `bun install` instala as dependências dos dois apps de uma vez.
@@ -94,8 +96,8 @@ Scaffold do Vite com o template react-ts, e então a limpeza: removemos o demo d
 
 ## Checklist
 
-- [ ] `bun install` funciona na raiz, sem entrar em subpastas
-- [ ] `bun dev` sobe api (3001) e web (5173) juntos
-- [ ] `curl http://localhost:3001/api/health` retorna `{"status":"ok"}`
-- [ ] `bun typecheck`, `bun lint` e `bun test` passam
-- [ ] `http://localhost:5173` mostra a página do SalvaAí
+- [x] `bun install` funciona na raiz, sem entrar em subpastas
+- [x] `bun dev` sobe api (3001) e web (5173) juntos
+- [x] `curl http://localhost:3001/api/health` retorna `{"status":"ok"}`
+- [x] `bun typecheck`, `bun lint` e `bun test` passam
+- [x] `http://localhost:5173` mostra a página do SalvaAí

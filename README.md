@@ -31,7 +31,15 @@ O diff entre dois capítulos é material de estudo pronto: `git diff cap-02-api 
 | Auth            | better-auth                  |
 | Monorepo        | Bun workspaces               |
 
-As justificativas de cada escolha estão no [PLANO.md](./PLANO.md) e explicadas em detalhe nos docs de cada capítulo.
+### Por que essas escolhas?
+
+- **Por que monorepo?** Frontend e backend falam do mesmo domínio (bookmarks). Um repositório só significa um `bun install`, scripts unificados e — mais adiante — tipos compartilhados entre API e web.
+- **Por que Bun?** Um único binário faz de gerenciador de pacotes, executor de testes e runtime do servidor. Menos ferramentas pra instalar e explicar, e velocidade que torna o ciclo editar → rodar → testar quase instantâneo.
+- **Por que TypeScript desde o dia 1?** Migrar de JS pra TS depois é um projeto inteiro; começar com TS é só uma configuração. O modo estrito pega erros antes deles chegarem no navegador.
+- **Por que Hono e não Express?** API parecida com a do Express (fácil de aprender), mas type-safe de ponta a ponta, com validação integrada via Zod e rodando nativamente no Bun.
+- **Por que Drizzle?** Schema escrito em TypeScript, migrations legíveis e queries que parecem SQL — transparente pra quem está aprendendo banco de dados.
+
+Os detalhes completos estão no [PLANO.md](./PLANO.md) e nos docs de cada capítulo.
 
 ## Comandos
 
