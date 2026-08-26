@@ -7,9 +7,10 @@ App de bookmarks construído capítulo a capítulo para ensinar vibe coding do z
 ```bash
 git clone <repo-url> && cd ox-alpha
 bun install
-bun db:start        # sobe Postgres no Docker
-bun db:migrate      # roda migrations
-bun dev             # API em :3001, web em :5173
+cp .env apps/api/.env   # copia variáveis de ambiente para a API
+bun db:start            # sobe Postgres no Docker
+bun db:migrate          # roda migrations
+bun dev                 # API em :3001, web em :5173
 ```
 
 Acesse `http://localhost:5173`. Crie uma conta e comece a salvar links.
@@ -63,14 +64,15 @@ ox-alpha/
 
 ## Variáveis de ambiente
 
-A API precisa de:
+A API precisa de um arquivo `apps/api/.env` com:
 
 ```bash
+BETTER_AUTH_URL=http://localhost:3001
 BETTER_AUTH_SECRET=<qualquer-string-longo>
 DATABASE_URL=postgresql://salvaai:salvaai@localhost:5432/salvaai
 ```
 
-Veja `apps/api/.env.example` para referência.
+Copie o `.env` da raiz: `cp .env apps/api/.env`
 
 ## Comandos úteis
 
