@@ -6,6 +6,7 @@ import * as authSchema from "./db/auth-schema";
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET, // falha alto se faltar — nunca rode com segredo padrão
+  trustedOrigins: process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : [],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: authSchema,

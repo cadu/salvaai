@@ -70,6 +70,7 @@ A API precisa de um arquivo `apps/api/.env` com:
 BETTER_AUTH_URL=http://localhost:3001
 BETTER_AUTH_SECRET=<qualquer-string-longo>
 DATABASE_URL=postgresql://salvaai:salvaai@localhost:5432/salvaai
+CORS_ORIGIN=http://localhost:5173
 ```
 
 Copie o `.env` da raiz: `cp .env apps/api/.env`
