@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Bookmark, LogOut, Plus, SearchX } from "lucide-react";
 import { BookmarkCard } from "@/components/bookmark-card";
 import { BookmarkFormDialog } from "@/components/bookmark-form-dialog";
@@ -7,32 +7,27 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Bookmark as BookmarkTipo, BookmarkInput, Usuario } from "@/types";
+import { authClient } from "@/lib/auth-client";
+import {
+  useBookmarks,
+  useCreateBookmark,
+  useUpdateBookmark,
+  useDeleteBookmark,
+} from "@/hooks/use-bookmarks";
+import type { Bookmark as BookmarkTipo, BookmarkInput } from "@/types";
 
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, { credentials: "include", ...init });
-  if (res.status === 204) return undefined as T;
-  const body = await res.json();
-  if (!res.ok) throw new Error(body?.error?.message ?? "erro na API");
-  return body as T;
-}
+export function BookmarksPage() {
+  const { data: session } = authClient.useSession();
+  const usuario = session?.user;
 
-export function BookmarksPage({ usuario, onSair }: { usuario: Usuario; onSair: () => void }) {
-  const [bookmarks, setBookmarks] = useState<BookmarkTipo[]>([]);
-  const [carregando, setCarregando] = useState(true);
+  const { data: bookmarks = [], isLoading } = useBookmarks();
+  const criarMutation = useCreateBookmark();
+  const atualizarMutation = useUpdateBookmark();
+  const excluirMutation = useDeleteBookmark();
+
   const [formAberto, setFormAberto] = useState(false);
   const [emEdicao, setEmEdicao] = useState<BookmarkTipo | null>(null);
   const [paraExcluir, setParaExcluir] = useState<BookmarkTipo | null>(null);
-
-  async function carregar() {
-    const data = await api<BookmarkTipo[]>("/api/bookmarks");
-    setBookmarks(data);
-    setCarregando(false);
-  }
-
-  useEffect(() => {
-    carregar();
-  }, []);
 
   function abrirCriar() {
     setEmEdicao(null);
@@ -44,29 +39,31 @@ export function BookmarksPage({ usuario, onSair }: { usuario: Usuario; onSair: (
     setFormAberto(true);
   }
 
-  async function salvar(dados: BookmarkInput) {
+  function salvar(dados: BookmarkInput) {
     if (emEdicao) {
-      await api(`/api/bookmarks/${emEdicao.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(dados),
-      });
+      atualizarMutation.mutate(
+        { id: emEdicao.id, dados },
+        {
+          onSuccess: () => {
+            setFormAberto(false);
+            setEmEdicao(null);
+          },
+        },
+      );
     } else {
-      await api("/api/bookmarks", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(dados),
+      criarMutation.mutate(dados, {
+        onSuccess: () => {
+          setFormAberto(false);
+          setEmEdicao(null);
+        },
       });
     }
-    setFormAberto(false);
-    setEmEdicao(null);
-    await carregar();
   }
 
-  async function excluir(bookmark: BookmarkTipo) {
-    await api(`/api/bookmarks/${bookmark.id}`, { method: "DELETE" });
-    setParaExcluir(null);
-    await carregar();
+  function excluir(bookmark: BookmarkTipo) {
+    excluirMutation.mutate(bookmark.id, {
+      onSuccess: () => setParaExcluir(null),
+    });
   }
 
   return (
@@ -80,10 +77,20 @@ export function BookmarksPage({ usuario, onSair }: { usuario: Usuario; onSair: (
             <span className="text-lg font-semibold">SalvaAí</span>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="hidden sm:inline-flex">
-              {usuario.email}
-            </Badge>
-            <Button variant="ghost" size="sm" onClick={onSair}>
+            {usuario && (
+              <Badge variant="outline" className="hidden sm:inline-flex">
+                {usuario.email}
+              </Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                authClient.signOut().then(() => {
+                  window.location.href = "/login";
+                })
+              }
+            >
               <LogOut data-icon="inline-start" />
               Sair
             </Button>
@@ -96,7 +103,7 @@ export function BookmarksPage({ usuario, onSair }: { usuario: Usuario; onSair: (
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Seus bookmarks</h1>
             <p className="text-muted-foreground text-sm">
-              {carregando
+              {isLoading
                 ? "carregando..."
                 : `${bookmarks.length} ${bookmarks.length === 1 ? "link salvo" : "links salvos"}`}
             </p>
@@ -107,7 +114,7 @@ export function BookmarksPage({ usuario, onSair }: { usuario: Usuario; onSair: (
           </Button>
         </div>
 
-        {carregando ? (
+        {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <Card key={i}>
