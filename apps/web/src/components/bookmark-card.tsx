@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { dataCurta, hostnameDe } from "@/lib/format";
+import { dataCurta, faviconUrl, hostnameDe } from "@/lib/format";
 import type { Bookmark } from "@/types";
 
 export function BookmarkCard({
@@ -24,7 +24,18 @@ export function BookmarkCard({
   return (
     <Card className="flex h-full flex-col gap-3 transition-shadow hover:shadow-md">
       <CardHeader>
-        <CardDescription className="flex items-center gap-1">
+        <CardDescription className="flex items-center gap-1.5">
+          {faviconUrl(bookmark.url) && (
+            <img
+              src={faviconUrl(bookmark.url)}
+              alt=""
+              className="size-4 rounded-sm"
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          )}
           <ExternalLink className="size-3" />
           {hostnameDe(bookmark.url)}
         </CardDescription>

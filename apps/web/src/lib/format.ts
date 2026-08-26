@@ -6,6 +6,15 @@ export function hostnameDe(url: string): string {
   }
 }
 
+export function faviconUrl(url: string): string {
+  try {
+    const dominio = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${dominio}&sz=32`;
+  } catch {
+    return "";
+  }
+}
+
 export function dataCurta(iso: string): string {
   return new Intl.DateTimeFormat("pt-BR", {
     day: "numeric",
