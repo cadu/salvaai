@@ -7,11 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { bookmarksIniciais, esperar } from "@/data/mock-bookmarks";
 import type { Bookmark as BookmarkTipo, BookmarkInput, Usuario } from "@/types";
 
-function novoId(): string {
-  return crypto.randomUUID();
+async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, { credentials: "include", ...init });
+  if (res.status === 204) return undefined as T;
+  const body = await res.json();
+  if (!res.ok) throw new Error(body?.error?.message ?? "erro na API");
+  return body as T;
 }
 
 export function BookmarksPage({ usuario, onSair }: { usuario: Usuario; onSair: () => void }) {
@@ -21,11 +24,14 @@ export function BookmarksPage({ usuario, onSair }: { usuario: Usuario; onSair: (
   const [emEdicao, setEmEdicao] = useState<BookmarkTipo | null>(null);
   const [paraExcluir, setParaExcluir] = useState<BookmarkTipo | null>(null);
 
+  async function carregar() {
+    const data = await api<BookmarkTipo[]>("/api/bookmarks");
+    setBookmarks(data);
+    setCarregando(false);
+  }
+
   useEffect(() => {
-    esperar().then(() => {
-      setBookmarks(bookmarksIniciais);
-      setCarregando(false);
-    });
+    carregar();
   }, []);
 
   function abrirCriar() {
@@ -38,22 +44,29 @@ export function BookmarksPage({ usuario, onSair }: { usuario: Usuario; onSair: (
     setFormAberto(true);
   }
 
-  function salvar(dados: BookmarkInput) {
+  async function salvar(dados: BookmarkInput) {
     if (emEdicao) {
-      setBookmarks((lista) => lista.map((b) => (b.id === emEdicao.id ? { ...b, ...dados } : b)));
+      await api(`/api/bookmarks/${emEdicao.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(dados),
+      });
     } else {
-      setBookmarks((lista) => [
-        { ...dados, id: novoId(), createdAt: new Date().toISOString() },
-        ...lista,
-      ]);
+      await api("/api/bookmarks", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(dados),
+      });
     }
     setFormAberto(false);
     setEmEdicao(null);
+    await carregar();
   }
 
-  function excluir(bookmark: BookmarkTipo) {
-    setBookmarks((lista) => lista.filter((b) => b.id !== bookmark.id));
+  async function excluir(bookmark: BookmarkTipo) {
+    await api(`/api/bookmarks/${bookmark.id}`, { method: "DELETE" });
     setParaExcluir(null);
+    await carregar();
   }
 
   return (

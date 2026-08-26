@@ -1,6 +1,6 @@
 # Capítulo 4 — O frontend
 
-> **Objetivo:** ao fim deste capítulo, o app tem cara nova: tela de login/cadastro **funcionando de verdade contra a API** (better-auth), lista de bookmarks em grid de cards, formulário de criar/editar em dialog e confirmação antes de excluir. Auth é real; os dados dos bookmarks ainda são mockados (integração completa no Capítulo 5).
+> **Objetivo:** ao fim deste capítulo, o app tem cara nova: tela de login/cadastro **funcionando de verdade contra a API** (better-auth), lista de bookmarks em grid de cards, formulário de criar/editar em dialog e confirmação antes de excluir. Tudo operável end-to-end contra a API.
 
 **Evidência (a tela de login, com o tema verde do SalvaAí):**
 
@@ -8,18 +8,16 @@
 
 ## Decisões
 
-| Decisão                                     | Alternativas                              | Por quê                                                                                                                                                                                                            |
-| ------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| shadcn/ui copiado para dentro do projeto    | Biblioteca de componentes (MUI, Ant)      | O código dos componentes vive em `src/components/ui` — dá pra ler, entender e mudar. Para quem está aprendendo, "abrir a caixa" vale mais do que importar caixa-preta.                                             |
-| Auth integrada agora, bookmarks mockados    | Tudo mock ou tudo real de uma vez         | Auth é um fluxo autocontido (cadastro → login → sessão); testar ele isoladamente garante que funciona antes de conectar o CRUD.                                                                                    |
-| better-auth client via `createAuthClient`   | Fetch manual com headers/cookies          | O client do better-auth já entende session, cookie e refetch — não inventamos roda. `signIn.email()` e `signUp.email()` são uma linha cada.                                                                        |
-| Proxy Vite (`/api` → `localhost:3001`)      | CORS manual no Hono                       | Mesmo domínio = cookies same-origin, sem configuração de `Access-Control-Allow-Credentials`. O proxy já existia no scaffold do cap-00.                                                                             |
-| `useSession()` como hook                    | Buscar sessão com `useEffect` + state     | O client do better-auth gerencia cache e refetch do estado de sessão; `useSession()` retorna `{ data, isPending }` sem boilerplate.                                                                                |
-| Latência simulada (`esperar(500)`)          | Render instantâneo do mock                | Sem espera, os estados de loading nunca apareceriam — e estado de loading que não se vê é estado que não se testa.                                                                                                 |
-| `BookmarkInput` separado de `Bookmark`      | Um tipo só com campos opcionais           | O que o formulário envia (`title`, `url`, `description`, `tags`) é diferente do que a lista guarda (`id`, `createdAt` vêm de fora). Tipos separados documentam essa fronteira — e espelham o que a API vai exigir. |
-| Validação espelhando as regras da API       | Validar só no backend (ou só no frontend) | A API do Capítulo 2 já valida; o form valida de novo para dar feedback imediato. Nenhuma das duas confia na outra — frontend valida por UX, API valida por segurança.                                              |
-| Dialog controlado (`open` + `onOpenChange`) | Dialog com trigger interno                | O mesmo dialog serve para criar e editar; quem decide o que ele mostra é a página, não o componente. Um estado (`emEdicao: Bookmark \| null`) comuta os dois modos.                                                |
-| Confirmação de delete com AlertDialog       | `window.confirm`                          | O AlertDialog é acessível (foco preso, ESC, aria) e visualmente parte do app. `confirm()` quebra o estilo e não é customizável.                                                                                    |
+| Decisão                                     | Alternativas                              | Por quê                                                                                                                                                                |
+| ------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| shadcn/ui copiado para dentro do projeto    | Biblioteca de componentes (MUI, Ant)      | O código dos componentes vive em `src/components/ui` — dá pra ler, entender e mudar. Para quem está aprendendo, "abrir a caixa" vale mais do que importar caixa-preta. |
+| better-auth client via `createAuthClient`   | Fetch manual com headers/cookies          | O client do better-auth já entende session, cookie e refetch — não inventamos roda. `signIn.email()` e `signUp.email()` são uma linha cada.                            |
+| Proxy Vite (`/api` → `localhost:3001`)      | CORS manual no Hono                       | Mesmo domínio = cookies same-origin, sem configuração de `Access-Control-Allow-Credentials`. O proxy já existia no scaffold do cap-00.                                 |
+| `useSession()` como hook                    | Buscar sessão com `useEffect` + state     | O client do better-auth gerencia cache e refetch do estado de sessão; `useSession()` retorna `{ data, isPending }` sem boilerplate.                                    |
+| Fetch plain com `credentials: "include"`    | TanStack Query ou SWR                     | Sem TanStack Query ainda (cap-05), fetch direto com refetch manual após cada mutation. Simples, didático, mostra o que o TanStack Query vai melhorar.                  |
+| Validação espelhando as regras da API       | Validar só no backend (ou só no frontend) | A API do Capítulo 2 já valida; o form valida de novo para dar feedback imediato. Nenhuma das duas confia na outra — frontend valida por UX, API valida por segurança.  |
+| Dialog controlado (`open` + `onOpenChange`) | Dialog com trigger interno                | O mesmo dialog serve para criar e editar; quem decide o que ele mostra é a página, não o componente. Um estado (`emEdicao: Bookmark \| null`) comuta os dois modos.    |
+| Confirmação de delete com AlertDialog       | `window.confirm`                          | O AlertDialog é acessível (foco preso, ESC, aria) e visualmente parte do app. `confirm()` quebra o estilo e não é customizável.                                        |
 
 ## Passo a passo
 
@@ -83,7 +81,7 @@ O `createAuthClient()` configura automaticamente: `basePath` = `/api/auth` (mesm
 
 - **`auth-screen.tsx`** — login e cadastro no mesmo card, alternados por um estado `modo`. Validação inline com `Field`/`FieldError`: email válido, senha ≥ 8, nome obrigatório só no cadastro. No submit, chama `authClient.signIn.email()` ou `authClient.signUp.email()` — se a API retornar erro (email duplicado, credenciais inválidas), exibe a mensagem abaixo do form. Sucesso → `window.location.reload()` para o `useSession()` do App pegar a nova sessão.
 - **`App.tsx`** — usa `authClient.useSession()` como hook: `isPending` → carregando, `session?.user` → `BookmarksPage`, `null` → `AuthScreen`. Logout chama `authClient.signOut()` + reload.
-- **`bookmarks-page.tsx`** — dona do estado: carrega o mock, guarda a lista e orquestra os dialogs. Grid responsivo (`sm:grid-cols-2 lg:grid-cols-3`) de `BookmarkCard`, com **skeletons** durante o load e **empty state** com call-to-action quando a lista está vazia.
+- **`bookmarks-page.tsx`** — busca bookmarks com `GET /api/bookmarks` no mount. Criar = `POST`, editar = `PATCH /:id`, excluir = `DELETE /:id`. Após cada mutation, refetcha a lista. Grid responsivo com **skeletons** durante o load e **empty state** com call-to-action. A helper `api()` encapsula `fetch` com `credentials: "include"` para o cookie de sessão ser enviado.
 - **`bookmark-form-dialog.tsx`** — um dialog, dois modos: `bookmark === null` cria, senão edita (campos pré-preenchidos via `useEffect`). Tags entram como texto livre separado por vírgula e saem como `string[]` normalizado (trim, lowercase, sem vazios).
 - **`bookmark-card.tsx`** — card burro (só exibe + dispara callbacks): hostname extraído da URL, título linkado (`target="_blank"`), descrição, badges de tags e ações de editar/excluir.
 - **`confirm-delete-dialog.tsx`** — AlertDialog que recebe o bookmark a excluir ou `null` (fechado).
@@ -97,7 +95,7 @@ bun db:start && bun db:migrate   # banco up
 bun dev                           # api + web juntos
 ```
 
-Fluxo de teste: abra `localhost:5173` → crie uma conta (cadastro) → veja a lista de bookmarks → faça logout → entre com as credenciais → tente entrar com senha errada e veja a mensagem de erro → tente cadastrar email duplicado. O auth é real; os bookmarks ainda são mockados (integração completa no Capítulo 5).
+Fluxo de teste: abra `localhost:5173` → crie uma conta (cadastro) → veja a lista vazia → crie, edite e exclua bookmarks → faça logout → entre com outra conta e veja isolamento (não vê bookmarks da primeira) → tente entrar com senha errada e veja a mensagem de erro → tente cadastrar email duplicado.
 
 ## O que aprender
 
@@ -105,9 +103,11 @@ Fluxo de teste: abra `localhost:5173` → crie uma conta (cadastro) → veja a l
 - **Design tokens**: uma cor de marca é uma variável CSS, não um valor hex repetido em 20 lugares.
 - **Auth client vs fetch manual**: `createAuthClient()` do better-auth gerencia cookie, session e refetch. Uma chamada `signIn.email()` substitui 20 linhas de fetch + headers + tratamento.
 - **Mesmo domínio com proxy**: o Vite proxy redireciona `/api` para `localhost:3001` — cookies ficam same-origin, sem configuração de CORS.
+- **`credentials: "include"`**: qualquer `fetch` que precise do cookie de sessão precisa dessa flag — sem ela, o browser não envia o cookie cross-origin.
 - **Estados que o Figma esquece**: loading (skeleton), vazio (call-to-action), erro de validação (inline no campo). Toda lista tem pelo menos os dois primeiros.
 - **Componente burro vs página inteligente**: cards e dialogs recebem props e disparam callbacks; só a página conhece a lista inteira.
 - **Um dialog, dois modos**: criar e editar são o mesmo form com dados diferentes — `null` é o flag.
+- **Isolamento por usuário**: a API filtra bookmarks pelo `userId` da sessão — cada um só vê os seus.
 
 ## Checklist
 
@@ -115,8 +115,9 @@ Fluxo de teste: abra `localhost:5173` → crie uma conta (cadastro) → veja a l
 - [x] Tela de cadastro funcionando contra a API (better-auth)
 - [x] Tela de login funcionando, erro exibido quando credenciais inválidas
 - [x] Logout acessível na UI (signOut + reload)
-- [x] Lista de bookmarks em grid responsivo de cards (mockados)
+- [x] Lista de bookmarks em grid responsivo de cards, puxada da API
 - [x] Estados de loading (skeletons) e vazio (call-to-action)
 - [x] Criar e editar no mesmo dialog, com validação espelhando a API
 - [x] Exclusão sempre com confirmação (AlertDialog)
-- [x] Decisões documentadas: composição de componentes shadcn, auth client, estados vazios/loading
+- [x] Isolamento entre usuários verificado (cada um só vê seus bookmarks)
+- [x] Decisões documentadas: composição de componentes shadcn, auth client, fetch, estados vazios/loading
