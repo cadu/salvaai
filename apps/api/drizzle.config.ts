@@ -1,10 +1,11 @@
 import { defineConfig } from "drizzle-kit";
+import { DATABASE_URL } from "./src/db/config";
 
 export default defineConfig({
   out: "./drizzle",
   schema: "./src/db/schema.ts",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgres://salvaai:salvaai@localhost:5432/salvaai",
+    url: DATABASE_URL,
   },
 });

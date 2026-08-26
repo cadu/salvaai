@@ -3,5 +3,6 @@
 .claude/
 skills-lock.json
 .scratch/
+# PRD curado à mão e arquivos gerados pelo drizzle-kit
 PLANO.md
 apps/*/drizzle/

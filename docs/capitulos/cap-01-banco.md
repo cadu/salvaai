@@ -19,15 +19,15 @@ Para explorar visualmente: `bun db:studio` abre o **Drizzle Studio** em `https:/
 
 ## Decisões
 
-| Decisão | Alternativas | Por quê |
-|---------|--------------|---------|
-| Postgres via Docker | Instalar Postgres direto na máquina | Docker isola o ambiente: mesma versão pra todo mundo que seguir o curso, e `docker compose down -v` apaga tudo sem culpa. |
-| Tags como `text[]` (array) | Tabela de junção `bookmark_tags` | Para o escopo do SalvaAí (buscar/filtrar por tag), array nativo do Postgres resolve sem JOIN. Se um dia precisarmos de metadados por tag, aí sim a tabela nasce. Migração futura é fácil — migrations existem justamente pra isso. |
-| `userId` com `ON DELETE CASCADE` | Deletar bookmarks na mão antes do usuário | O banco garante a regra "sem usuário órfão". Regras de integridade pertencem ao banco, não à boa vontade do código da API. |
-| Email com índice único | Validar unicidade só na aplicação | Único jeito de garantir de verdade: duas requisições simultâneas passam por qualquer validação de aplicação, mas não por uma constraint. |
-| UUID gerado pelo banco (`defaultRandom`) | Serial/integer auto-increment | UUIDs não expõem contagem de usuários/bookmarks em URLs e evitam colisão ao unir dados. |
-| Índices em `bookmarks.user_id` e `created_at` | Sem índices além das PKs | A query mais comum do app será "bookmarks do usuário, mais recentes primeiro" — os índices nascem da query, não do achismo. |
-| Migration versionada no repo (`drizzle/0000_*.sql`) | `drizzle-kit push` (sync direto) | O SQL da migration é histórico auditável: dá pra ler o que mudou entre capítulos. `push` é conveniente em protótipos e perigoso depois. |
+| Decisão                                             | Alternativas                              | Por quê                                                                                                                                                                                                                            |
+| --------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Postgres via Docker                                 | Instalar Postgres direto na máquina       | Docker isola o ambiente: mesma versão pra todo mundo que seguir o curso, e `docker compose down -v` apaga tudo sem culpa.                                                                                                          |
+| Tags como `text[]` (array)                          | Tabela de junção `bookmark_tags`          | Para o escopo do SalvaAí (buscar/filtrar por tag), array nativo do Postgres resolve sem JOIN. Se um dia precisarmos de metadados por tag, aí sim a tabela nasce. Migração futura é fácil — migrations existem justamente pra isso. |
+| `userId` com `ON DELETE CASCADE`                    | Deletar bookmarks na mão antes do usuário | O banco garante a regra "sem usuário órfão". Regras de integridade pertencem ao banco, não à boa vontade do código da API.                                                                                                         |
+| Email com índice único                              | Validar unicidade só na aplicação         | Único jeito de garantir de verdade: duas requisições simultâneas passam por qualquer validação de aplicação, mas não por uma constraint.                                                                                           |
+| UUID gerado pelo banco (`defaultRandom`)            | Serial/integer auto-increment             | UUIDs não expõem contagem de usuários/bookmarks em URLs e evitam colisão ao unir dados.                                                                                                                                            |
+| Índices em `bookmarks.user_id` e `created_at`       | Sem índices além das PKs                  | A query mais comum do app será "bookmarks do usuário, mais recentes primeiro" — os índices nascem da query, não do achismo.                                                                                                        |
+| Migration versionada no repo (`drizzle/0000_*.sql`) | `drizzle-kit push` (sync direto)          | O SQL da migration é histórico auditável: dá pra ler o que mudou entre capítulos. `push` é conveniente em protótipos e perigoso depois.                                                                                            |
 
 ## Passo a passo
 
@@ -44,7 +44,7 @@ services:
       - salvaai-pgdata:/var/lib/postgresql/data
 ```
 
-> **Prompt usado com a IA:** *"Crie um compose.yaml com Postgres 17, usuário/senha/database salvaai, porta 5432 e volume nomeado para persistir dados."*
+> **Prompt usado com a IA:** _"Crie um compose.yaml com Postgres 17, usuário/senha/database salvaai, porta 5432 e volume nomeado para persistir dados."_
 
 > **Armadilha real deste capítulo:** a imagem `postgres:18` mudou o layout de volumes e quebrou com nossa configuração. Usamos `postgres:17-alpine`, estável e bem documentado. Quando algo "simples" falha, leia o log do container — a resposta estava lá.
 
@@ -54,7 +54,7 @@ O `.env` guarda a `DATABASE_URL` (o `.env.example` documenta as variáveis sem v
 
 ### 3. Schema como código TypeScript (test-first)
 
-De novo, o teste veio primeiro — e ele roda contra o Postgres de verdade:
+De novo, o teste veio primeiro — e ele roda contra o Postgres de verdade, então deixe o `bun db:start` ativo antes de rodar `bun test`:
 
 ```ts
 // apps/api/src/db/schema.test.ts (resumo)
@@ -88,15 +88,15 @@ export const bookmarks = pgTable("bookmarks", {
 }, ...);
 ```
 
-### 4. Migration e reversibilidade
+### 4. Migration e recriabilidade
 
 ```bash
 bun db:migrate   # aplica as migrations pendentes
 ```
 
-A migration é SQL plano (`apps/api/drizzle/0000_*.sql`) — dá pra ler, versionar e reverter. Testamos a reversibilidade de verdade: derrubamos o schema (`DROP SCHEMA public CASCADE` + o schema de controle `drizzle`), rodamos `bun db:migrate` de novo e todos os testes passaram do zero.
+A migration é SQL plano (`apps/api/drizzle/0000_*.sql`) — dá pra ler e versionar. Uma observação honesta: migrations do Drizzle são **só para frente** (forward-only). Não existe "rollback" automático; reverter uma migration significa escrever uma nova que desfaz o que a anterior fez. O que testamos aqui foi a **recriabilidade**: derrubamos o schema inteiro (`DROP SCHEMA public CASCADE` + o schema de controle `drizzle`), rodamos `bun db:migrate` do zero e todos os testes passaram — ou seja, qualquer pessoa consegue reconstruir o banco em qualquer ponto da história do projeto.
 
-> **Prompt usado com a IA:** *"Modele em Drizzle as tabelas users, sessions e bookmarks com email único, cascade delete nos filhos, tags como array de texto e índices para 'bookmarks mais recentes por usuário'. Depois gere a migration."*
+> **Prompt usado com a IA:** _"Modele em Drizzle as tabelas users, sessions e bookmarks com email único, cascade delete nos filhos, tags como array de texto e índices para 'bookmarks mais recentes por usuário'. Depois gere a migration."_
 
 ## O que aprender
 

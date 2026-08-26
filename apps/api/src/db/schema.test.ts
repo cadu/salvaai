@@ -9,13 +9,24 @@ afterAll(async () => {
   await db.delete(users);
 });
 
+let emailSeq = 0;
+async function createUser(overrides: Partial<typeof users.$inferInsert> = {}) {
+  const [user] = await db
+    .insert(users)
+    .values({
+      name: "Usuária de teste",
+      email: `teste-${emailSeq++}@example.com`,
+      passwordHash: "hash-falso",
+      ...overrides,
+    })
+    .returning();
+  if (!user) throw new Error("insert não retornou usuário");
+  return user;
+}
+
 describe("schema", () => {
   it("salva e busca um bookmark com dono e tags", async () => {
-    const [user] = await db
-      .insert(users)
-      .values({ name: "Cadu", email: "cadu@example.com", passwordHash: "hash-falso" })
-      .returning();
-    if (!user) throw new Error("insert não retornou usuário");
+    const user = await createUser({ name: "Cadu", email: "cadu@example.com" });
 
     const [bookmark] = await db
       .insert(bookmarks)
@@ -42,11 +53,11 @@ describe("schema", () => {
   });
 
   it("não permite dois usuários com o mesmo email", async () => {
-    await db.insert(users).values({ name: "A", email: "unico@example.com", passwordHash: "x" });
+    await createUser({ email: "unico@example.com" });
 
     let duplicadoFalhou = false;
     try {
-      await db.insert(users).values({ name: "B", email: "unico@example.com", passwordHash: "y" });
+      await createUser({ name: "B", email: "unico@example.com" });
     } catch {
       duplicadoFalhou = true;
     }
@@ -55,11 +66,7 @@ describe("schema", () => {
   });
 
   it("apaga os bookmarks quando o dono é apagado (cascade)", async () => {
-    const [user] = await db
-      .insert(users)
-      .values({ name: "Temp", email: "temp@example.com", passwordHash: "x" })
-      .returning();
-    if (!user) throw new Error("insert não retornou usuário");
+    const user = await createUser({ name: "Temp", email: "temp@example.com" });
 
     await db.insert(bookmarks).values({
       userId: user.id,
@@ -77,11 +84,7 @@ describe("schema", () => {
   });
 
   it("session referencia um usuário e expira", async () => {
-    const [user] = await db
-      .insert(users)
-      .values({ name: "Sessão", email: "sessao@example.com", passwordHash: "x" })
-      .returning();
-    if (!user) throw new Error("insert não retornou usuário");
+    const user = await createUser({ name: "Sessão", email: "sessao@example.com" });
 
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
     const [session] = await db
