@@ -4,11 +4,11 @@
 
 **Blocked by:** 02 (database foundation)
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
-- [ ] Rotas CRUD completas em `/api/bookmarks`
-- [ ] Validação de entrada com Zod em todas as rotas de escrita
-- [ ] Formato de erro único e status codes corretos (400/404/201/etc.)
-- [ ] Testes cobrindo o caminho feliz e os erros de validação
-- [ ] Decisões documentadas: por que validar na API mesmo validando no form, formato de erro
-- [ ] Doc do capítulo: `docs/capitulos/cap-02-api.md`
+- [x] Rotas CRUD completas em `/api/bookmarks`
+- [x] Validação de entrada com Zod em todas as rotas de escrita
+- [x] Formato de erro único e status codes corretos (400/404/201/etc.)
+- [x] Testes cobrindo o caminho feliz e os erros de validação
+- [x] Decisões documentadas: por que validar na API mesmo validando no form, formato de erro
+- [x] Doc do capítulo: `docs/capitulos/cap-02-api.md`
