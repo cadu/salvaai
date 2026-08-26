@@ -4,12 +4,12 @@
 
 **Blocked by:** 04 (auth)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tailwind + shadcn/ui instalados e tematizados (componentes copiados pra dentro do projeto)
-- [ ] Layout/shell do app (navegação básica, estados vazios de loading pensados)
-- [ ] Tela de cadastro funcionando contra a API
-- [ ] Tela de login funcionando, erro exibido quando credenciais inválidas
-- [ ] Logout acessível na UI
-- [ ] Decisões documentadas: composição de componentes shadcn, estados vazios/loading
-- [ ] Doc do capítulo iniciado: `docs/capitulos/cap-04-ui.md` (parte 1)
+- [x] Tailwind + shadcn/ui instalados e tematizados (componentes copiados pra dentro do projeto)
+- [x] Layout/shell do app (navegação básica, estados vazios de loading pensados)
+- [x] Tela de cadastro funcionando contra a API
+- [x] Tela de login funcionando, erro exibido quando credenciais inválidas
+- [x] Logout acessível na UI
+- [x] Decisões documentadas: composição de componentes shadcn, estados vazios/loading
+- [x] Doc do capítulo iniciado: `docs/capitulos/cap-04-ui.md` (parte 1)

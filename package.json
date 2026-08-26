@@ -21,7 +21,8 @@
     "db:start": "docker compose up -d",
     "db:stop": "docker compose stop",
     "db:migrate": "bun run --filter='@salvaai/api' db:migrate",
-    "db:studio": "bun run --filter='@salvaai/api' db:studio"
+    "db:studio": "bun run --filter='@salvaai/api' db:studio",
+    "db:reset": "docker compose down -v && bun db:migrate"
   },
   "type": "module",
   "workspaces": [

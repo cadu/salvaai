@@ -4,10 +4,10 @@
 
 **Blocked by:** 05 (frontend shell + auth screens)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Lista de bookmarks em grid de cards, puxada da API
-- [ ] Formulário de criar/editar em dialog, com validação
-- [ ] Confirmação de delete antes de excluir
-- [ ] Estados de loading e vazio tratados na lista
-- [ ] Doc `docs/capitulos/cap-04-ui.md` concluído (parte 2)
+- [x] Lista de bookmarks em grid de cards, puxada da API
+- [x] Formulário de criar/editar em dialog, com validação
+- [x] Confirmação de delete antes de excluir
+- [x] Estados de loading e vazio tratados na lista
+- [x] Doc `docs/capitulos/cap-04-ui.md` concluído (parte 2)

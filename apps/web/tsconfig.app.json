@@ -6,6 +6,11 @@
     "types": ["vite/client"],
     "allowArbitraryExtensions": true,
 
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
     "allowImportingTsExtensions": true,
     "moduleDetection": "force",
     "noEmit": true,

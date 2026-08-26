@@ -1,15 +1,26 @@
-import "./App.css";
+import { authClient } from "@/lib/auth-client";
+import { BookmarksPage } from "@/components/bookmarks-page";
+import { AuthScreen } from "@/components/auth-screen";
 
-function App() {
-  return (
-    <main id="center">
-      <h1>SalvaAí</h1>
-      <p>Seu app de bookmarks. Em construção — capítulo 0.</p>
-      <p>
-        API em <code>http://localhost:3001/api/health</code>
+export default function App() {
+  const { data: session, isPending } = authClient.useSession();
+
+  if (isPending) {
+    return (
+      <p className="min-h-svh flex items-center justify-center text-muted-foreground">
+        Carregando...
       </p>
-    </main>
+    );
+  }
+
+  const usuario = session?.user ?? null;
+
+  return usuario ? (
+    <BookmarksPage
+      usuario={usuario}
+      onSair={() => authClient.signOut().then(() => window.location.reload())}
+    />
+  ) : (
+    <AuthScreen />
   );
 }
-
-export default App;
