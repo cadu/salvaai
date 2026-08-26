@@ -1,32 +1,21 @@
-import { afterAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { eq } from "drizzle-orm";
 import { db } from "./index";
 import { bookmarks, sessions, users } from "./schema";
+import { createUser } from "../test-helpers";
 
-afterAll(async () => {
+async function limparTabelas() {
   await db.delete(bookmarks);
   await db.delete(sessions);
   await db.delete(users);
-});
-
-let emailSeq = 0;
-async function createUser(overrides: Partial<typeof users.$inferInsert> = {}) {
-  const [user] = await db
-    .insert(users)
-    .values({
-      name: "Usuária de teste",
-      email: `teste-${emailSeq++}@example.com`,
-      passwordHash: "hash-falso",
-      ...overrides,
-    })
-    .returning();
-  if (!user) throw new Error("insert não retornou usuário");
-  return user;
 }
+
+beforeAll(limparTabelas);
+afterAll(limparTabelas);
 
 describe("schema", () => {
   it("salva e busca um bookmark com dono e tags", async () => {
-    const user = await createUser({ name: "Cadu", email: "cadu@example.com" });
+    const user = await createUser(db, { name: "Cadu", email: "cadu@example.com" });
 
     const [bookmark] = await db
       .insert(bookmarks)
@@ -53,11 +42,11 @@ describe("schema", () => {
   });
 
   it("não permite dois usuários com o mesmo email", async () => {
-    await createUser({ email: "unico@example.com" });
+    await createUser(db, { email: "unico@example.com" });
 
     let duplicadoFalhou = false;
     try {
-      await createUser({ name: "B", email: "unico@example.com" });
+      await createUser(db, { name: "B", email: "unico@example.com" });
     } catch {
       duplicadoFalhou = true;
     }
@@ -66,7 +55,7 @@ describe("schema", () => {
   });
 
   it("apaga os bookmarks quando o dono é apagado (cascade)", async () => {
-    const user = await createUser({ name: "Temp", email: "temp@example.com" });
+    const user = await createUser(db, { name: "Temp", email: "temp@example.com" });
 
     await db.insert(bookmarks).values({
       userId: user.id,
@@ -84,7 +73,7 @@ describe("schema", () => {
   });
 
   it("session referencia um usuário e expira", async () => {
-    const user = await createUser({ name: "Sessão", email: "sessao@example.com" });
+    const user = await createUser(db, { name: "Sessão", email: "sessao@example.com" });
 
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
     const [session] = await db
