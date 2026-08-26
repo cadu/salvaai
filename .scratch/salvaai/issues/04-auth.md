@@ -4,13 +4,18 @@
 
 **Blocked by:** 03 (bookmarks API)
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
-- [ ] better-auth configurado: signup, login, logout, session
-- [ ] Sessions persistidas na tabela `sessions`, cookie httpOnly
-- [ ] Senhas nunca salvas na mão (hash gerido pelo better-auth)
-- [ ] Rotas de bookmarks protegidas: 401 sem login
-- [ ] Bookmarks filtrados pelo dono; tentativa de acessar bookmark de outro usuário → 404/403
-- [ ] Testes: fluxo auth + isolamento entre usuários
-- [ ] Decisões documentadas: cookies httpOnly vs localStorage, autorização por dono do recurso
-- [ ] Doc do capítulo: `docs/capitulos/cap-03-auth.md`
+- [x] better-auth configurado: signup, login, logout, session
+- [x] Sessions persistidas na tabela `sessions`, cookie httpOnly
+- [x] Senhas nunca salvas na mão (hash gerido pelo better-auth)
+- [x] Rotas de bookmarks protegidas: 401 sem login
+- [x] Bookmarks filtrados pelo dono; tentativa de acessar bookmark de outro usuário → 404/403
+- [x] Testes: fluxo auth + isolamento entre usuários
+- [x] Decisões documentadas: cookies httpOnly vs localStorage, autorização por dono do recurso
+- [x] Doc do capítulo: `docs/capitulos/cap-03-auth.md`
+
+## Comments
+
+- **Desvio literal aceito:** better-auth gere a tabela como `session` (singular), não `sessions`. O critério 2 vale como cumprido — a sessão persiste na tabela de sessões do dono da funcionalidade.
+- **Screenshot:** capítulo de API; evidência é transcript curl, igual ao cap-02.
