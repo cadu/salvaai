@@ -4,12 +4,12 @@
 
 **Blocked by:** 01 (monorepo scaffold)
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
-- [ ] Docker Compose sobe o Postgres (`bun db:start`)
-- [ ] Drizzle configurado no workspace da API
-- [ ] Schema: `users`, `sessions`, `bookmarks` (título, url, descrição, tags, dono)
-- [ ] Primeira migration aplicada (`bun db:migrate`) e reversível
-- [ ] `bun db:studio` abre e mostra as tabelas
-- [ ] Decisões documentadas: modelagem do bookmark (campos, tags como texto vs tabela), índices
-- [ ] Doc do capítulo: `docs/capitulos/cap-01-banco.md`
+- [x] Docker Compose sobe o Postgres (`bun db:start`)
+- [x] Drizzle configurado no workspace da API
+- [x] Schema: `users`, `sessions`, `bookmarks` (título, url, descrição, tags, dono)
+- [x] Primeira migration aplicada (`bun db:migrate`) e reversível
+- [x] `bun db:studio` abre e mostra as tabelas
+- [x] Decisões documentadas: modelagem do bookmark (campos, tags como texto vs tabela), índices
+- [x] Doc do capítulo: `docs/capitulos/cap-01-banco.md`

@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: salvaai-db
+    environment:
+      POSTGRES_USER: salvaai
+      POSTGRES_PASSWORD: salvaai
+      POSTGRES_DB: salvaai
+    ports:
+      - "5432:5432"
+    volumes:
+      - salvaai-pgdata:/var/lib/postgresql/data
+
+volumes:
+  salvaai-pgdata:
