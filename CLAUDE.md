@@ -15,6 +15,10 @@ Issues are tracked locally as markdown files under `.scratch/` in this repo. See
 
 Default label vocabulary: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
 
+### Time tracking
+
+Registre o início e o fim de cada issue em `.scratch/salvaai/issues/tempo-gasto.md`. Formato: `date "+%Y-%m-%d %H:%M"` no início e no fim da issue. Isso alimenta a análise de produtividade depois.
+
 ### Domain docs
 
 Single-context layout — root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
