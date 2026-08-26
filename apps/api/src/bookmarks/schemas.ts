@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 export const bookmarkCreateSchema = z.object({
-  userId: z.uuid(),
   title: z.string().min(1),
   url: z.url(),
   description: z.string().optional(),

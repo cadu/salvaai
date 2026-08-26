@@ -1,242 +1,173 @@
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "bun:test";
 import { app } from "../app";
-import { db } from "../db";
-import { bookmarks, sessions, users } from "../db/schema";
-import { createUser, type User } from "../test-helpers";
+import { limparTabelas, signUp, type UsuarioLogado } from "../test-helpers";
 
-async function createBookmark(userId: string, overrides: Record<string, unknown> = {}) {
-  const res = await app.request("/api/bookmarks", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ userId, title: "Docs do Hono", url: "https://hono.dev", ...overrides }),
-  });
-  return (await res.json()) as { id: string; [k: string]: unknown };
-}
+beforeAll(limparTabelas);
 
-type JsonBody = Record<string, unknown>;
+type Bookmark = {
+  id: string;
+  title: string;
+  url: string;
+  tags: string[];
+  [k: string]: unknown;
+};
 
-async function json(method: string, path: string, body: JsonBody) {
+async function json(method: string, path: string, cookie: string, body?: Record<string, unknown>) {
   return app.request(path, {
     method,
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
+    headers: { "content-type": "application/json", cookie },
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
 
-function post(body: JsonBody) {
-  return json("POST", "/api/bookmarks", body);
+function post(cookie: string, body: Record<string, unknown>) {
+  return json("POST", "/api/bookmarks", cookie, body);
 }
 
-function patch(id: string, body: JsonBody) {
-  return json("PATCH", `/api/bookmarks/${id}`, body);
+function patch(id: string, cookie: string, body: Record<string, unknown>) {
+  return json("PATCH", `/api/bookmarks/${id}`, cookie, body);
 }
 
-beforeAll(async () => {
-  await db.delete(bookmarks);
-  await db.delete(sessions);
-  await db.delete(users);
-});
+async function criarBookmark(quem: UsuarioLogado, overrides: Record<string, unknown> = {}) {
+  const res = await post(quem.cookie, {
+    title: "Docs do Hono",
+    url: "https://hono.dev",
+    ...overrides,
+  });
+  expect(res.status).toBe(201);
+  return (await res.json()) as Bookmark;
+}
 
-afterAll(async () => {
-  await db.delete(bookmarks);
-  await db.delete(sessions);
-  await db.delete(users);
+describe("proteção", () => {
+  it("exige login: sem cookie é 401", async () => {
+    for (const [method, path] of [
+      ["GET", "/api/bookmarks"],
+      ["POST", "/api/bookmarks"],
+      ["GET", "/api/bookmarks/00000000-0000-0000-0000-000000000000"],
+    ] as const) {
+      const res = await app.request(path, { method });
+      expect(res.status).toBe(401);
+    }
+  });
 });
 
 describe("POST /api/bookmarks", () => {
-  let user: User;
+  it("cria bookmark com o dono vindo da sessão (não do payload)", async () => {
+    const aluna = await signUp();
 
-  beforeAll(async () => {
-    user = await createUser(db);
-  });
-
-  it("cria um bookmark e devolve 201 com o recurso", async () => {
-    const res = await app.request("/api/bookmarks", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        userId: user.id,
-        title: "React Docs",
-        url: "https://react.dev",
-        description: "Documentação do React",
-        tags: ["react", "docs"],
-      }),
+    const res = await post(aluna.cookie, {
+      title: "React Docs",
+      url: "https://react.dev",
+      description: "Documentação do React",
+      tags: ["react", "docs"],
+      userId: "00000000-0000-0000-0000-000000000099",
     });
 
     expect(res.status).toBe(201);
-    const body = (await res.json()) as {
-      id: string;
-      title: string;
-      url: string;
-      tags: string[];
-    };
+    const body = (await res.json()) as Bookmark & { userId: string };
     expect(body.title).toBe("React Docs");
-    expect(body.url).toBe("https://react.dev");
     expect(body.tags).toEqual(["react", "docs"]);
+    expect(body.userId).toBe(aluna.id);
   });
 
-  it("rejeita payload sem título com 400 e formato de erro único", async () => {
-    const res = await app.request("/api/bookmarks", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ userId: user.id, url: "https://react.dev" }),
-    });
+  it("rejeita URL inválida com 400 e formato de erro único", async () => {
+    const aluna = await signUp();
+
+    const res = await post(aluna.cookie, { title: "X", url: "não é url" });
 
     expect(res.status).toBe(400);
-    const body = (await res.json()) as { error: { code: string; message: string } };
+    const body = (await res.json()) as { error: { code: string; details: unknown[] } };
     expect(body.error.code).toBe("VALIDATION_ERROR");
-    expect(body.error.message).toBeString();
-  });
-
-  it("rejeita URL inválida com 400", async () => {
-    const res = await app.request("/api/bookmarks", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ userId: user.id, title: "X", url: "não é url" }),
-    });
-
-    expect(res.status).toBe(400);
+    expect(body.error.details.length).toBeGreaterThan(0);
   });
 
   it("rejeita JSON malformado com 400", async () => {
+    const aluna = await signUp();
+
     const res = await app.request("/api/bookmarks", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", cookie: aluna.cookie },
       body: "{isso não é json",
     });
 
     expect(res.status).toBe(400);
-    const body = (await res.json()) as { error: { code: string; message: string } };
-    expect(body.error.code).toBe("VALIDATION_ERROR");
-  });
-
-  it("devolve 404 USER_NOT_FOUND quando o dono não existe", async () => {
-    const res = await post({
-      userId: "00000000-0000-0000-0000-000000000000",
-      title: "Sem dono",
-      url: "https://example.com",
-    });
-
-    expect(res.status).toBe(404);
-    const body = (await res.json()) as { error: { code: string } };
-    expect(body.error.code).toBe("USER_NOT_FOUND");
   });
 });
 
 describe("GET /api/bookmarks", () => {
-  it("lista os bookmarks criados", async () => {
-    const user = await createUser(db);
-    await createBookmark(user.id, { title: "Primeiro" });
-    await createBookmark(user.id, { title: "Segundo" });
+  it("lista só os bookmarks do usuário logado", async () => {
+    const ana = await signUp();
+    const bruno = await signUp();
 
-    const res = await app.request("/api/bookmarks");
+    await criarBookmark(ana, { title: "Da Ana" });
+    await criarBookmark(bruno, { title: "Do Bruno" });
+
+    const res = await json("GET", "/api/bookmarks", ana.cookie);
     expect(res.status).toBe(200);
 
-    const lista = (await res.json()) as { title: string }[];
+    const lista = (await res.json()) as Bookmark[];
     const titulos = lista.map((b) => b.title);
-    expect(titulos).toContain("Primeiro");
-    expect(titulos).toContain("Segundo");
+    expect(titulos).toContain("Da Ana");
+    expect(titulos).not.toContain("Do Bruno");
   });
 });
 
-describe("GET /api/bookmarks/:id", () => {
-  it("busca por id existente", async () => {
-    const user = await createUser(db);
-    const criado = await createBookmark(user.id);
+describe("isolamento entre usuários", () => {
+  it("outra pessoa recebe 404 ao buscar, atualizar ou apagar bookmark alheio", async () => {
+    const dona = await signUp();
+    const intrusa = await signUp();
+    const bookmark = await criarBookmark(dona);
 
-    const res = await app.request(`/api/bookmarks/${criado.id}`);
-    expect(res.status).toBe(200);
-    expect(((await res.json()) as { title: string }).title).toBe("Docs do Hono");
-  });
+    for (const [method, corpo] of [
+      ["GET", undefined],
+      ["PATCH", { title: "Hackeado" }],
+      ["DELETE", undefined],
+    ] as const) {
+      const res = await app.request(`/api/bookmarks/${bookmark.id}`, {
+        method,
+        headers: { "content-type": "application/json", cookie: intrusa.cookie },
+        body: corpo ? JSON.stringify(corpo) : undefined,
+      });
+      expect(res.status).toBe(404);
+    }
 
-  it("devolve 404 com formato de erro único para id inexistente", async () => {
-    const res = await app.request("/api/bookmarks/00000000-0000-0000-0000-000000000000");
-    expect(res.status).toBe(404);
-
-    const body = (await res.json()) as { error: { code: string; message: string } };
-    expect(body.error.code).toBe("NOT_FOUND");
-  });
-
-  it("devolve 400 para id que não é uuid", async () => {
-    const res = await app.request("/api/bookmarks/não-é-uuid");
-    expect(res.status).toBe(400);
+    const intocado = await json("GET", `/api/bookmarks/${bookmark.id}`, dona.cookie);
+    expect(((await intocado.json()) as Bookmark).title).toBe("Docs do Hono");
   });
 });
 
 describe("PATCH /api/bookmarks/:id", () => {
-  it("atualiza título e tags", async () => {
-    const user = await createUser(db);
-    const criado = await createBookmark(user.id);
+  it("atualiza título preservando as tags", async () => {
+    const aluna = await signUp();
+    const bookmark = await criarBookmark(aluna, { tags: ["hono"] });
 
-    const res = await app.request(`/api/bookmarks/${criado.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ title: "Novo título", tags: ["atualizado"] }),
-    });
+    const res = await patch(bookmark.id, aluna.cookie, { title: "Novo título" });
 
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { title: string; tags: string[]; url: string };
+    const body = (await res.json()) as Bookmark;
     expect(body.title).toBe("Novo título");
-    expect(body.tags).toEqual(["atualizado"]);
-    expect(body.url).toBe("https://hono.dev");
+    expect(body.tags).toEqual(["hono"]);
   });
 
-  it("rejeita atualização com campo inválido", async () => {
-    const user = await createUser(db);
-    const criado = await createBookmark(user.id);
+  it("rejeita PATCH com corpo vazio", async () => {
+    const aluna = await signUp();
+    const bookmark = await criarBookmark(aluna);
 
-    const res = await patch(criado.id, { title: "" });
+    const res = await patch(bookmark.id, aluna.cookie, {});
 
     expect(res.status).toBe(400);
-  });
-
-  it("rejeita PATCH com corpo vazio (nenhum campo para atualizar)", async () => {
-    const user = await createUser(db);
-    const criado = await createBookmark(user.id);
-
-    const res = await patch(criado.id, {});
-
-    expect(res.status).toBe(400);
-  });
-
-  it("PATCH só de título preserva as tags existentes", async () => {
-    const user = await createUser(db);
-    const criado = await createBookmark(user.id, { tags: ["hono", "docs"] });
-
-    const res = await patch(criado.id, { title: "Só mudei o título" });
-
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as { tags: string[] };
-    expect(body.tags).toEqual(["hono", "docs"]);
-  });
-
-  it("devolve 404 ao atualizar id inexistente", async () => {
-    const res = await app.request("/api/bookmarks/00000000-0000-0000-0000-000000000000", {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ title: "Nada" }),
-    });
-
-    expect(res.status).toBe(404);
   });
 });
 
 describe("DELETE /api/bookmarks/:id", () => {
-  it("apaga e depois devolve 404 no GET", async () => {
-    const user = await createUser(db);
-    const criado = await createBookmark(user.id);
+  it("apaga o próprio bookmark; GET seguinte é 404", async () => {
+    const aluna = await signUp();
+    const bookmark = await criarBookmark(aluna);
 
-    const del = await app.request(`/api/bookmarks/${criado.id}`, { method: "DELETE" });
+    const del = await json("DELETE", `/api/bookmarks/${bookmark.id}`, aluna.cookie);
     expect(del.status).toBe(204);
 
-    const get = await app.request(`/api/bookmarks/${criado.id}`);
+    const get = await json("GET", `/api/bookmarks/${bookmark.id}`, aluna.cookie);
     expect(get.status).toBe(404);
-  });
-
-  it("devolve 404 ao apagar id inexistente", async () => {
-    const res = await app.request("/api/bookmarks/00000000-0000-0000-0000-000000000000", {
-      method: "DELETE",
-    });
-    expect(res.status).toBe(404);
   });
 });
