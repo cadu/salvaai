@@ -30,6 +30,10 @@ function parseId(c: Context) {
 
 type Env = { Variables: { userId: string } };
 
+function donoEId(userId: string, id: string) {
+  return and(eq(bookmarks.id, id), eq(bookmarks.userId, userId));
+}
+
 export const bookmarkRoutes = new Hono<Env>()
 
   .use("*", async (c, next) => {
@@ -72,7 +76,7 @@ export const bookmarkRoutes = new Hono<Env>()
     const [bookmark] = await db
       .select()
       .from(bookmarks)
-      .where(and(eq(bookmarks.id, id.data), eq(bookmarks.userId, c.get("userId"))));
+      .where(donoEId(c.get("userId"), id.data));
     if (!bookmark) return apiError(c, 404, "NOT_FOUND", "bookmark não encontrado");
     return c.json(bookmark);
   })
@@ -91,7 +95,7 @@ export const bookmarkRoutes = new Hono<Env>()
     const [atualizado] = await db
       .update(bookmarks)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(bookmarks.id, id.data), eq(bookmarks.userId, c.get("userId"))))
+      .where(donoEId(c.get("userId"), id.data))
       .returning();
     if (!atualizado) return apiError(c, 404, "NOT_FOUND", "bookmark não encontrado");
     return c.json(atualizado);
@@ -105,7 +109,7 @@ export const bookmarkRoutes = new Hono<Env>()
 
     const [apagado] = await db
       .delete(bookmarks)
-      .where(and(eq(bookmarks.id, id.data), eq(bookmarks.userId, c.get("userId"))))
+      .where(donoEId(c.get("userId"), id.data))
       .returning();
     if (!apagado) return apiError(c, 404, "NOT_FOUND", "bookmark não encontrado");
     return c.body(null, 204);

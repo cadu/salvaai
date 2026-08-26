@@ -15,14 +15,14 @@ $ curl -b cookies.txt -X POST localhost:3001/api/bookmarks ...            # 201,
 
 ## Decisões
 
-| Decisão | Alternativas | Por quê |
-|---------|--------------|---------|
-| better-auth cuidando de senha/sessão | Hash na mão com bcrypt + tabela própria | "Nunca salve senha na mão" é regra de ouro: hash com salt correto, timing-safe compare, expiração e renovação de token — cada um desses detalhes é um buraco de segurança em potencial. better-auth resolve tudo isso testado pela comunidade. |
-| Sessão em cookie **httpOnly** | Token no localStorage | JavaScript não lê cookie httpOnly — então um XSS no frontend não consegue furtar a sessão. localStorage é o alvo clássico. |
-| Tabelas de auth geradas pelo CLI do better-auth | Modelar user/session à mão | O adapter espera colunas exatas (e o runtime cobra as que faltam — aprendemos na prática com o campo `issuer`). Schema do dono da funcionalidade vem do próprio dono. |
-| Dono do bookmark vem da **sessão**, nunca do payload | Aceitar `userId` no corpo | O payload pode mentir; a sessão, não. O Capítulo 2 aceitava `userId` como scaffolding — este capítulo remove ele pra sempre. |
-| Autorização por dono do recurso no WHERE | Buscar primeiro, checar depois | `WHERE id = ? AND user_id = ?` devolve vazio quando não é seu → mesmo 404 de "não existe". Não vaza existência de recurso alheio (sem 403 que delata). |
-| Migrations esmagadas em baseline nova | Migration incremental com prompt de rename | O drizzle-kit queria perguntar se `users` virou `user` (tabela do better-auth) — prompt interativo que travou nosso fluxo. Em dev, sem dados a preservar, recomeçamos o histórico de migrations do zero. Custo zero aqui; em produção, seria incremental. |
+| Decisão                                              | Alternativas                               | Por quê                                                                                                                                                                                                                                                   |
+| ---------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| better-auth cuidando de senha/sessão                 | Hash na mão com bcrypt + tabela própria    | "Nunca salve senha na mão" é regra de ouro: hash com salt correto, timing-safe compare, expiração e renovação de token — cada um desses detalhes é um buraco de segurança em potencial. better-auth resolve tudo isso testado pela comunidade.            |
+| Sessão em cookie **httpOnly**                        | Token no localStorage                      | JavaScript não lê cookie httpOnly — então um XSS no frontend não consegue furtar a sessão. localStorage é o alvo clássico.                                                                                                                                |
+| Tabelas de auth geradas pelo CLI do better-auth      | Modelar user/session à mão                 | O adapter espera colunas exatas (e o runtime cobra as que faltam — aprendemos na prática com o campo `issuer`). Schema do dono da funcionalidade vem do próprio dono.                                                                                     |
+| Dono do bookmark vem da **sessão**, nunca do payload | Aceitar `userId` no corpo                  | O payload pode mentir; a sessão, não. O Capítulo 2 aceitava `userId` como scaffolding — este capítulo remove ele pra sempre.                                                                                                                              |
+| Autorização por dono do recurso no WHERE             | Buscar primeiro, checar depois             | `WHERE id = ? AND user_id = ?` devolve vazio quando não é seu → mesmo 404 de "não existe". Não vaza existência de recurso alheio (sem 403 que delata).                                                                                                    |
+| Migrations esmagadas em baseline nova                | Migration incremental com prompt de rename | O drizzle-kit queria perguntar se `users` virou `user` (tabela do better-auth) — prompt interativo que travou nosso fluxo. Em dev, sem dados a preservar, recomeçamos o histórico de migrations do zero. Custo zero aqui; em produção, seria incremental. |
 
 ## Passo a passo
 
@@ -37,7 +37,7 @@ export const auth = betterAuth({
 });
 ```
 
-> **Prompt usado com a IA:** *"Configure better-auth num app Hono rodando no Bun: adapter Drizzle Postgres, email+senha habilitado, cookie httpOnly, secret vindo do .env."*
+> **Prompt usado com a IA:** _"Configure better-auth num app Hono rodando no Bun: adapter Drizzle Postgres, email+senha habilitado, cookie httpOnly, secret vindo do .env."_
 
 O `secret` assina os cookies de sessão. No `.env.example` ele está documentado; troque por um valor longo e aleatório fora de dev (`openssl rand -base64 32`).
 
@@ -50,6 +50,7 @@ bunx @better-auth/cli generate --config src/auth.ts --output src/db/auth-schema.
 ```
 
 Duas lições deste capítulo:
+
 - O **CLI e o runtime precisam estar na mesma versão** — o arquivo gerado veio sem a coluna `issuer` que o runtime esperava, e adicionamos ela manualmente ao schema.
 - Quando o drizzle-kit pede decisão interativa ("essa tabela foi renomeada?"), o caminho honesto em dev foi **esmagar tudo numa migration baseline nova**. Reproduzível: `docker compose down -v` → `bun db:migrate` → banco inteiro de volta.
 

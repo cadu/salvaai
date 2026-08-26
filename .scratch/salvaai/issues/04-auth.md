@@ -14,3 +14,8 @@
 - [x] Testes: fluxo auth + isolamento entre usuários
 - [x] Decisões documentadas: cookies httpOnly vs localStorage, autorização por dono do recurso
 - [x] Doc do capítulo: `docs/capitulos/cap-03-auth.md`
+
+## Comments
+
+- **Desvio literal aceito:** better-auth gere a tabela como `session` (singular), não `sessions`. O critério 2 vale como cumprido — a sessão persiste na tabela de sessões do dono da funcionalidade.
+- **Screenshot:** capítulo de API; evidência é transcript curl, igual ao cap-02.

@@ -40,8 +40,16 @@ export async function signUp(overrides: { email?: string; name?: string; passwor
   const cookie = cookies.map((c) => c.split(";")[0]).join("; ");
   if (!cookie) throw new Error("sign-up não devolveu cookie de sessão");
 
-  const body = (await res.json()) as { user?: { id: string } };
-  if (!body.user?.id) throw new Error("sign-up não devolveu o usuário");
+  const body: unknown = await res.json();
+  const id = isAuthBody(body) ? body.user.id : undefined;
+  if (!id) throw new Error("sign-up não devolveu o usuário");
 
-  return { cookie, id: body.user.id, email: dados.email } satisfies UsuarioLogado;
+  return { cookie, id, email: dados.email };
+}
+
+function isAuthBody(body: unknown): body is { user: { id: string } } {
+  if (typeof body !== "object" || body === null) return false;
+  const user = (body as { user?: unknown }).user;
+  if (typeof user !== "object" || user === null) return false;
+  return typeof (user as { id?: unknown }).id === "string";
 }
