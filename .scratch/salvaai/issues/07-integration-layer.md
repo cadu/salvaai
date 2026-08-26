@@ -4,12 +4,12 @@
 
 **Blocked by:** 06 (bookmark management UI)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] TanStack Router com file-based routing e rotas protegidas por auth
-- [ ] Redirect pós-login para onde o usuário ia
-- [ ] TanStack Query consumindo todos os endpoints da API
-- [ ] Invalidação de cache após cada mutation
-- [ ] Mutation otimista em pelo menos um fluxo (ex.: delete)
-- [ ] Decisões documentadas: o que vai nas query keys, quando invalidar
-- [ ] Doc do capítulo: `docs/capitulos/cap-05-integracao.md`
+- [x] TanStack Router com file-based routing e rotas protegidas por auth
+- [x] Redirect pós-login para onde o usuário ia
+- [x] TanStack Query consumindo todos os endpoints da API
+- [x] Invalidação de cache após cada mutation
+- [x] Mutation otimista em pelo menos um fluxo (ex.: delete)
+- [x] Decisões documentadas: o que vai nas query keys, quando invalidar
+- [x] Doc do capítulo: `docs/capitulos/cap-05-integracao.md`

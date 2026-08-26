@@ -3,7 +3,12 @@ import { Bookmark } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import {
-  Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -12,8 +17,14 @@ type Modo = "login" | "cadastro";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function AuthScreen() {
-  const [modo, setModo] = useState<Modo>("login");
+export function AuthScreen({
+  initialMode = "login",
+  onSuccess,
+}: {
+  initialMode?: Modo;
+  onSuccess?: () => void;
+}) {
+  const [modo, setModo] = useState<Modo>(initialMode);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -45,10 +56,15 @@ export function AuthScreen() {
     if (result.error) {
       const msg = result.error?.message ?? "falha ao autenticar";
       if (msg.includes("already")) setErroServidor("email já cadastrado");
-      else if (msg.includes("Invalid") || msg.includes("credentials")) setErroServidor("email ou senha incorretos");
+      else if (msg.includes("Invalid") || msg.includes("credentials"))
+        setErroServidor("email ou senha incorretos");
       else setErroServidor(msg);
     } else {
-      window.location.reload();
+      if (ehCadastro) {
+        window.location.href = "/bookmarks";
+      } else {
+        onSuccess?.();
+      }
     }
     setEnviando(false);
   }
@@ -68,7 +84,9 @@ export function AuthScreen() {
           </div>
           <CardTitle className="text-2xl">SalvaAí</CardTitle>
           <CardDescription>
-            {ehCadastro ? "Crie sua conta para começar a salvar links" : "Entre para acessar seus bookmarks"}
+            {ehCadastro
+              ? "Crie sua conta para começar a salvar links"
+              : "Entre para acessar seus bookmarks"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -77,19 +95,43 @@ export function AuthScreen() {
               {ehCadastro && (
                 <Field data-invalid={!!erros.nome || undefined}>
                   <FieldLabel htmlFor="nome">Nome</FieldLabel>
-                  <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Maria Silva" autoComplete="name" />
+                  <Input
+                    id="nome"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    placeholder="Maria Silva"
+                    autoComplete="name"
+                  />
                   {erros.nome && <FieldError>{erros.nome}</FieldError>}
                 </Field>
               )}
               <Field data-invalid={!!erros.email || undefined}>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="maria@exemplo.com" autoComplete="email" />
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="maria@exemplo.com"
+                  autoComplete="email"
+                />
                 {erros.email && <FieldError>{erros.email}</FieldError>}
               </Field>
               <Field data-invalid={!!erros.senha || undefined}>
                 <FieldLabel htmlFor="senha">Senha</FieldLabel>
-                <Input id="senha" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="••••••••" autoComplete={ehCadastro ? "new-password" : "current-password"} />
-                {erros.senha ? <FieldError>{erros.senha}</FieldError> : ehCadastro && <FieldDescription>mínimo de 8 caracteres</FieldDescription>}
+                <Input
+                  id="senha"
+                  type="password"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete={ehCadastro ? "new-password" : "current-password"}
+                />
+                {erros.senha ? (
+                  <FieldError>{erros.senha}</FieldError>
+                ) : (
+                  ehCadastro && <FieldDescription>mínimo de 8 caracteres</FieldDescription>
+                )}
               </Field>
               {erroServidor && <p className="text-destructive text-sm">{erroServidor}</p>}
             </FieldGroup>
