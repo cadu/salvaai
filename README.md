@@ -1,63 +1,90 @@
 # SalvaAí
 
-Um app de bookmarks simples, construído passo a passo para **ensinar pessoas a fazer vibe coding**: criar apps de verdade conversando com IA, entendendo cada decisão ao longo do caminho.
+App de bookmarks construído capítulo a capítulo para ensinar vibe coding do zero.
 
-## O que é
-
-O usuário cria uma conta, faz login e salva links com título, URL, descrição e tags — CRUD completo de bookmarks. Mas o produto final é só metade da história: este repositório é um **curso**, onde cada capítulo é uma etapa real de desenvolvimento com as decisões explicadas em português.
-
-## Como seguir o curso
-
-Cada capítulo vive em um branch encadeado (`cap-01` nasce de `cap-00`). Escolha por onde começar:
-
-- **Do zero:** `git checkout cap-00-setup` e siga os docs de `docs/capitulos/` na ordem.
-- **Só ver o resultado:** fique na `main` — sempre tem o app completo funcionando.
-- **De um ponto específico:** dê checkout no capítulo anterior ao que te interessa e siga dali.
-
-O diff entre dois capítulos é material de estudo pronto: `git diff cap-02-api cap-03-auth` mostra exatamente o que mudou.
-
-## Stack
-
-| Camada          | Escolha                      |
-| --------------- | ---------------------------- |
-| Frontend        | React 19 + Vite + TypeScript |
-| Roteamento      | TanStack Router              |
-| Dados no client | TanStack Query               |
-| UI              | shadcn/ui + Tailwind CSS     |
-| Backend         | Hono                         |
-| ORM             | Drizzle ORM                  |
-| Validação       | Zod                          |
-| Banco           | PostgreSQL via Docker        |
-| Auth            | better-auth                  |
-| Monorepo        | Bun workspaces               |
-
-### Por que essas escolhas?
-
-- **Por que monorepo?** Frontend e backend falam do mesmo domínio (bookmarks). Um repositório só significa um `bun install`, scripts unificados e — mais adiante — tipos compartilhados entre API e web.
-- **Por que Bun?** Um único binário faz de gerenciador de pacotes, executor de testes e runtime do servidor. Menos ferramentas pra instalar e explicar, e velocidade que torna o ciclo editar → rodar → testar quase instantâneo.
-- **Por que TypeScript desde o dia 1?** Migrar de JS pra TS depois é um projeto inteiro; começar com TS é só uma configuração. O modo estrito pega erros antes deles chegarem no navegador.
-- **Por que Hono e não Express?** API parecida com a do Express (fácil de aprender), mas type-safe de ponta a ponta, com validação integrada via Zod e rodando nativamente no Bun.
-- **Por que Drizzle?** Schema escrito em TypeScript, migrations legíveis e queries que parecem SQL — transparente pra quem está aprendendo banco de dados.
-
-Os detalhes completos estão no [PLANO.md](./PLANO.md) e nos docs de cada capítulo.
-
-## Comandos
+## Quick start
 
 ```bash
-bun install          # instala tudo (monorepo)
-bun dev              # sobe api + web juntos
-bun test             # roda os testes
-bun typecheck        # TypeScript nos dois apps
-bun lint             # ESLint
-bun format           # Prettier
+git clone <repo-url> && cd ox-alpha
+bun install
+bun db:start        # sobe Postgres no Docker
+bun db:migrate      # roda migrations
+bun dev             # API em :3001, web em :5173
 ```
 
-## Estrutura
+Acesse `http://localhost:5173`. Crie uma conta e comece a salvar links.
+
+## Navegando pelos capítulos
+
+Cada capítulo é uma branch com tag de snapshot. Para começar do zero, use `cap-00`. Para ver o app completo, use `main`.
+
+| Branch   | Tag    | O que tem                                              |
+| -------- | ------ | ------------------------------------------------------ |
+| `cap-00` | `v0.0` | Monorepo vazio: Bun workspaces, Vite, Tailwind, shadcn |
+| `cap-01` | `v0.1` | Postgres + Docker, Drizzle ORM, migrations             |
+| `cap-02` | `v0.2` | API REST: GET/POST/PATCH/DELETE bookmarks              |
+| `cap-03` | `v0.3` | Auth com better-auth: signup, login, sessão            |
+| `cap-04` | `v0.4` | Frontend: auth screens + CRUD de bookmarks             |
+| `cap-05` | `v0.5` | TanStack Router + Query: rotas protegidas, cache       |
+| `cap-06` | `v0.6` | Sonner toasts, dark mode, skeleton loading             |
+| `cap-07` | `v0.7` | Favicon, busca por texto, filtro por tag               |
+| `main`   | `v0.7` | App completo                                           |
+
+```bash
+# Começar do zero:
+git checkout cap-00
+
+# Ver o app completo:
+git checkout main
+```
+
+## Arquitetura
 
 ```
-apps/
-├── api/   ← backend Hono
-└── web/   ← frontend React + Vite
-docs/
-└── capitulos/  ← material do curso, um doc por capítulo
+ox-alpha/
+├── apps/
+│   ├── api/          Hono + Drizzle + better-auth
+│   └── web/          React + Vite + TanStack Router/Query
+├── docs/
+│   └── capitulos/    Doc de cada capítulo
+├── .scratch/         Issues e tracking
+└── AGENTS.md         Regras para agentes de IA
 ```
+
+## Tech stack
+
+- **Runtime:** Bun
+- **API:** Hono, Drizzle ORM, better-auth
+- **Frontend:** React, Vite, Tailwind CSS, shadcn/ui
+- **Routing:** TanStack Router (file-based)
+- **Data fetching:** TanStack Query
+- **Database:** Postgres (Docker)
+- **Toasts:** Sonner
+
+## Variáveis de ambiente
+
+A API precisa de:
+
+```bash
+BETTER_AUTH_SECRET=<qualquer-string-longo>
+DATABASE_URL=postgresql://salvaai:salvaai@localhost:5432/salvaai
+```
+
+Veja `apps/api/.env.example` para referência.
+
+## Comandos úteis
+
+```bash
+bun dev              # Roda API + web em modo dev
+bun db:start         # Sobe Postgres no Docker
+bun db:stop          # Para o Docker
+bun db:migrate       # Roda migrations
+bun db:studio        # Abre Drizzle Studio
+bun db:reset         # Recria banco do zero
+bun run typecheck    # Typecheck nos dois apps
+bun run lint         # ESLint nos dois apps
+```
+
+## Licença
+
+MIT
