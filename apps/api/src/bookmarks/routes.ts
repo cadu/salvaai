@@ -2,28 +2,43 @@ import { Hono, type Context } from "hono";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db";
-import { bookmarks } from "../db/schema";
+import { bookmarks, users } from "../db/schema";
 import { bookmarkCreateSchema, bookmarkUpdateSchema } from "./schemas";
 
-function validationError(c: Context, issues: z.ZodError["issues"]) {
-  return c.json(
-    {
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "payload inválido",
-        details: issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-      },
-    },
-    400,
-  );
+type Issue = z.ZodError["issues"][number];
+
+function apiError(
+  c: Context,
+  status: ContentfulStatus,
+  code: string,
+  message: string,
+  details: Issue[] = [],
+) {
+  return c.json({ error: { code, message, details } }, status);
 }
 
-const idParam = z.uuid();
+type ContentfulStatus = 400 | 404;
+
+async function parseBody(c: Context) {
+  return c.req.json().catch(() => null);
+}
+
+function parseId(c: Context) {
+  return z.uuid().safeParse(c.req.param("id"));
+}
 
 export const bookmarkRoutes = new Hono()
   .post("/", async (c) => {
-    const parsed = bookmarkCreateSchema.safeParse(await c.req.json().catch(() => null));
-    if (!parsed.success) return validationError(c, parsed.error.issues);
+    const parsed = bookmarkCreateSchema.safeParse(await parseBody(c));
+    if (!parsed.success) {
+      return apiError(c, 400, "VALIDATION_ERROR", "payload inválido", parsed.error.issues);
+    }
+
+    const [dono] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, parsed.data.userId));
+    if (!dono) return apiError(c, 404, "USER_NOT_FOUND", "usuário não encontrado");
 
     const [criado] = await db.insert(bookmarks).values(parsed.data).returning();
     return c.json(criado, 201);
@@ -33,39 +48,41 @@ export const bookmarkRoutes = new Hono()
     return c.json(lista);
   })
   .get("/:id", async (c) => {
-    const parsedId = idParam.safeParse(c.req.param("id"));
-    if (!parsedId.success) return validationError(c, parsedId.error.issues);
-
-    const [bookmark] = await db.select().from(bookmarks).where(eq(bookmarks.id, parsedId.data));
-    if (!bookmark) {
-      return c.json({ error: { code: "NOT_FOUND", message: "bookmark não encontrado" } }, 404);
+    const id = parseId(c);
+    if (!id.success) {
+      return apiError(c, 400, "VALIDATION_ERROR", "payload inválido", id.error.issues);
     }
+
+    const [bookmark] = await db.select().from(bookmarks).where(eq(bookmarks.id, id.data));
+    if (!bookmark) return apiError(c, 404, "NOT_FOUND", "bookmark não encontrado");
     return c.json(bookmark);
   })
   .patch("/:id", async (c) => {
-    const parsedId = idParam.safeParse(c.req.param("id"));
-    if (!parsedId.success) return validationError(c, parsedId.error.issues);
+    const id = parseId(c);
+    if (!id.success) {
+      return apiError(c, 400, "VALIDATION_ERROR", "payload inválido", id.error.issues);
+    }
 
-    const parsed = bookmarkUpdateSchema.safeParse(await c.req.json().catch(() => null));
-    if (!parsed.success) return validationError(c, parsed.error.issues);
+    const parsed = bookmarkUpdateSchema.safeParse(await parseBody(c));
+    if (!parsed.success) {
+      return apiError(c, 400, "VALIDATION_ERROR", "payload inválido", parsed.error.issues);
+    }
 
     const [atualizado] = await db
       .update(bookmarks)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(eq(bookmarks.id, parsedId.data))
+      .where(eq(bookmarks.id, id.data))
       .returning();
-    if (!atualizado) {
-      return c.json({ error: { code: "NOT_FOUND", message: "bookmark não encontrado" } }, 404);
-    }
+    if (!atualizado) return apiError(c, 404, "NOT_FOUND", "bookmark não encontrado");
     return c.json(atualizado);
   })
   .delete("/:id", async (c) => {
-    const parsedId = idParam.safeParse(c.req.param("id"));
-    if (!parsedId.success) return validationError(c, parsedId.error.issues);
-
-    const [apagado] = await db.delete(bookmarks).where(eq(bookmarks.id, parsedId.data)).returning();
-    if (!apagado) {
-      return c.json({ error: { code: "NOT_FOUND", message: "bookmark não encontrado" } }, 404);
+    const id = parseId(c);
+    if (!id.success) {
+      return apiError(c, 400, "VALIDATION_ERROR", "payload inválido", id.error.issues);
     }
+
+    const [apagado] = await db.delete(bookmarks).where(eq(bookmarks.id, id.data)).returning();
+    if (!apagado) return apiError(c, 404, "NOT_FOUND", "bookmark não encontrado");
     return c.body(null, 204);
   });

@@ -13,6 +13,24 @@ async function createBookmark(userId: string, overrides: Record<string, unknown>
   return (await res.json()) as { id: string; [k: string]: unknown };
 }
 
+type JsonBody = Record<string, unknown>;
+
+async function json(method: string, path: string, body: JsonBody) {
+  return app.request(path, {
+    method,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+function post(body: JsonBody) {
+  return json("POST", "/api/bookmarks", body);
+}
+
+function patch(id: string, body: JsonBody) {
+  return json("PATCH", `/api/bookmarks/${id}`, body);
+}
+
 beforeAll(async () => {
   await db.delete(bookmarks);
   await db.delete(sessions);
@@ -91,6 +109,18 @@ describe("POST /api/bookmarks", () => {
     const body = (await res.json()) as { error: { code: string; message: string } };
     expect(body.error.code).toBe("VALIDATION_ERROR");
   });
+
+  it("devolve 404 USER_NOT_FOUND quando o dono não existe", async () => {
+    const res = await post({
+      userId: "00000000-0000-0000-0000-000000000000",
+      title: "Sem dono",
+      url: "https://example.com",
+    });
+
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("USER_NOT_FOUND");
+  });
 });
 
 describe("GET /api/bookmarks", () => {
@@ -155,13 +185,29 @@ describe("PATCH /api/bookmarks/:id", () => {
     const user = await createUser(db);
     const criado = await createBookmark(user.id);
 
-    const res = await app.request(`/api/bookmarks/${criado.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ title: "" }),
-    });
+    const res = await patch(criado.id, { title: "" });
 
     expect(res.status).toBe(400);
+  });
+
+  it("rejeita PATCH com corpo vazio (nenhum campo para atualizar)", async () => {
+    const user = await createUser(db);
+    const criado = await createBookmark(user.id);
+
+    const res = await patch(criado.id, {});
+
+    expect(res.status).toBe(400);
+  });
+
+  it("PATCH só de título preserva as tags existentes", async () => {
+    const user = await createUser(db);
+    const criado = await createBookmark(user.id, { tags: ["hono", "docs"] });
+
+    const res = await patch(criado.id, { title: "Só mudei o título" });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { tags: string[] };
+    expect(body.tags).toEqual(["hono", "docs"]);
   });
 
   it("devolve 404 ao atualizar id inexistente", async () => {
