@@ -16,3 +16,6 @@ dist/
 
 # test & coverage
 coverage/
+
+# tanstack
+.tanstack/
